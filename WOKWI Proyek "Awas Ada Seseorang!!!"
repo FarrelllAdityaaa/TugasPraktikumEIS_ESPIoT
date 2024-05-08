@@ -1,0 +1,68 @@
+
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+#define PIR_PIN 34          // Pin GPIO yang terhubung ke PIR Motion Sensor
+#define TRIGGER_PIN 13     // Pin GPIO yang terhubung ke trigger ultrasonik distance sensor
+#define ECHO_PIN 12        // Pin GPIO yang terhubung ke echo ultrasonik distance sensor
+#define BUZZER_PIN 18     // Pin GPIO yang terhubung ke buzzer
+
+#define MAX_DISTANCE 300  // Jarak maksimal yang diukur oleh ultrasonik sensor (dalam cm)
+#define MIN_DISTANCE 0    // Jarak minimal untuk menampilkan hasil pada LCD (dalam cm)
+// #define MAX_PROXIMITY 100 // Jarak maksimal untuk memicu peringatan dengan PIR Motion Sensor (dalam cm)
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(PIR_PIN, INPUT);
+  pinMode(TRIGGER_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  lcd.init();
+  lcd.backlight();
+}
+
+void loop() {
+  // Baca hasil dari PIR Motion Sensor
+  bool motionDetected = digitalRead(PIR_PIN);
+
+  // Jika gerakan terdeteksi, aktifkan buzzer dan tampilkan pesan pada LCD
+  if (motionDetected) {
+    digitalWrite(BUZZER_PIN, HIGH);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Peringatan!!!");
+    lcd.setCursor(0, 1);
+    lcd.print("Ada Seseorang!!!");
+    tone(BUZZER_PIN, 1000);
+    delay(1000); // Durasi bunyi buzzer
+    noTone(BUZZER_PIN); 
+    digitalWrite(BUZZER_PIN, LOW);
+  }
+
+  // Ukur jarak menggunakan ultrasonik distance sensor
+  long duration, distance;
+  digitalWrite(TRIGGER_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIGGER_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIGGER_PIN, LOW);
+  duration = pulseIn(ECHO_PIN, HIGH);
+  distance = duration * 0.034 / 2;
+
+  // Jika jarak berada dalam rentang yang diinginkan, tampilkan pada LCD
+  if (distance >= MIN_DISTANCE && distance <= MAX_DISTANCE) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Jarak:");
+    lcd.setCursor(7, 0);
+    lcd.print(distance);
+    lcd.setCursor(11, 0);
+    lcd.print("cm");
+  }
+
+  // Tambahkan delay untuk menghindari pembacaan yang berlebihan pada loop
+  delay(100);
+}
+
